@@ -14,13 +14,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   double _opacity = 1.0;
-  final double _maxScrollExtent = 100.0; // Adjust this value to control when the fade completes
-  DateTime _lastUpdate = DateTime.now();
-  bool _isUpdating = false;
+  static const double _maxScrollExtent = 100.0; // Adjust this value to control when the fade completes
+  int _lastFrame = 0;
+  bool _isDisposed = false;
   late Future<Map<String, List<Skill>>> _groupedSkillsFuture;
   final SkillsRepository _skillsRepository = SkillsRepository();
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
+  final ValueNotifier<double> _opacityNotifier = ValueNotifier<double>(1.0);
+  final _appBarKey = GlobalKey();
 
   @override
   void initState() {
@@ -39,34 +41,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     
     // Add optimized scroll listener
     _scrollController.addListener(() {
-      final now = DateTime.now();
+      if (_isDisposed) return;
+      
+      final currentFrame = _lastFrame + 1;
+      _lastFrame = currentFrame;
+      
       // Only update at most once per frame (16ms for 60fps)
-      if (now.difference(_lastUpdate).inMilliseconds < 16 || _isUpdating) return;
-      
-      _isUpdating = true;
-      _lastUpdate = now;
-      
-      // Schedule the update for the next frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (_isDisposed || _lastFrame != currentFrame) return;
+        
         final double offset = _scrollController.offset;
         final newOpacity = 1.0 - (offset / _maxScrollExtent).clamp(0.0, 1.0);
         
-        // Only update if opacity actually changed
+        // Only update if opacity actually changed significantly
         if ((newOpacity - _opacity).abs() > 0.01) {
-          setState(() {
-            _opacity = newOpacity;
-          });
+          _opacity = newOpacity;
+          _opacityNotifier.value = newOpacity;
         }
-        _isUpdating = false;
       });
     });
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _animationController.dispose();
     _scrollController.dispose();
+    _opacityNotifier.dispose();
     super.dispose();
   }
 
@@ -97,47 +98,55 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // App Bar with gradient background
+          // Optimized App Bar with gradient background
           SliverAppBar(
+            key: _appBarKey,
             expandedHeight: 160.0,
             pinned: true,
             floating: false,
             backgroundColor: Colors.black,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: const AssetImage('assets/back.png'),
-                  fit: BoxFit.cover,
-                  opacity: _opacity * 0.7, // Fade image based on scroll position
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF121212).withOpacity(0.9 * _opacity),
-                    const Color(0xFF000000).withOpacity(0.9 * _opacity),
-                  ],
-                ),
-              ),
-              child: SafeArea(
-                child: Center(
-                  child: Text(
-                    'FOT MOB',
-                    style: GoogleFonts.exo2(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.0,
-                      shadows: const [
-                        Shadow(
-                          color: Colors.black87,
-                          blurRadius: 8,
-                          offset: Offset(2, 2),
-                        ),
-                      ],
+            flexibleSpace: RepaintBoundary(
+              child: ValueListenableBuilder<double>(
+                valueListenable: _opacityNotifier,
+                builder: (context, opacity, _) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: const AssetImage('assets/back.png'),
+                        fit: BoxFit.cover,
+                        opacity: opacity * 0.7,
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFF121212).withOpacity(0.9 * opacity),
+                          const Color(0xFF000000).withOpacity(0.9 * opacity),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                    child: SafeArea(
+                      child: Center(
+                        child: Text(
+                          'FOT MOB',
+                          style: GoogleFonts.exo2(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2.0,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black87,
+                                blurRadius: 8,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
