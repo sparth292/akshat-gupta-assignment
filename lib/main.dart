@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
     const Color cardGrey = Color(0xFF1E1E1E); // Dark grey for cards
     
     return MaterialApp(
-      title: 'fot Mob',
+      title: 'fot mob',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // Use dark theme

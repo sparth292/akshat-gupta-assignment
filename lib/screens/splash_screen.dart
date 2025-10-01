@@ -1,5 +1,6 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -75,27 +76,43 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                     ),
                     const SizedBox(height: 30),
-                    // Shooting ball animation - Constrained to a reasonable size
+                    // Custom white football animation
                     SizedBox(
                       width: 300,
-                      height: 200, // Reduced height to prevent overflow
-                      child: Lottie.asset(
-                        'assets/animations/football_shot.json',
-                        fit: BoxFit.contain,
-                        controller: _controller,
+                      height: 200,
+                      child: AnimatedBuilder(
+                        animation: _controller,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            painter: _FootballPainter(_controller.value),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Loading text
+                    // Loading indicator with white color
                     const Padding(
                       padding: EdgeInsets.only(bottom: 40.0),
-                      child: Text(
-                        'Loading...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 2.0,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading...',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Spacer(flex: 1),
@@ -108,4 +125,51 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ),
     );
   }
+}
+
+class _FootballPainter extends CustomPainter {
+  final double progress;
+  final Paint _paint = Paint()..color = Colors.white;
+
+  _FootballPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide * 0.2;
+    
+    // Draw football
+    canvas.drawCircle(center, radius, _paint);
+    
+    // Draw pentagon pattern (simplified)
+    _paint.style = PaintingStyle.stroke;
+    _paint.strokeWidth = 2;
+    
+    final path = Path();
+    final points = 5;
+    for (int i = 0; i < points; i++) {
+      final angle = i * 2 * 3.14159 / points;
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    
+    // Animate the stroke
+    final animatedRadius = radius * (0.8 + 0.4 * sin(progress * 3.14159 * 2));
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(animatedRadius / radius);
+    canvas.translate(-center.dx, -center.dy);
+    canvas.drawPath(path, _paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FootballPainter oldDelegate) => 
+      oldDelegate.progress != progress;
 }
