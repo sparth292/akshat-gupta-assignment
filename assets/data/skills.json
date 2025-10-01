@@ -1,0 +1,11 @@
+[
+  {"name": "Dribbling", "level": "Basic", "image": "dribbling.png"},
+  {"name": "Passing", "level": "Basic", "image": "passing.png"},
+  {"name": "Shooting", "level": "Basic", "image": "shooting.png"},
+  {"name": "Vault", "level": "Intermediate", "image": "vault.png"},
+  {"name": "Tackling", "level": "Intermediate", "image": "tackling.png"},
+  {"name": "Heading", "level": "Intermediate", "image": "heading.png"},
+  {"name": "Agility", "level": "Advanced", "image": "agility.png"},
+  {"name": "Free Kicks", "level": "Advanced", "image": "freekick.png"},
+  {"name": "Penalty Kicks", "level": "Advanced", "image": "penalty.png"}
+]
